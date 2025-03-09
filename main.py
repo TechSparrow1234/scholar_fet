@@ -1,6 +1,7 @@
 from scholarly import scholarly
 import pandas as pd
 import re
+import time
 
 
 def search_scholars_by_research_areas(research_areas):
@@ -13,12 +14,12 @@ def search_scholars_by_research_areas(research_areas):
             search_query = scholarly.search_keyword(area)
             found_authors = 0
             for i, author in enumerate(search_query):
-                if i >= 3:  # 每个研究方向只取前 3 个学者
+                if i >= 100:  # 每个研究方向只取前 3 个学者
                     break
                 try:
                     print(f"正在获取研究方向 {area} 下第 {i + 1} 个学者的信息...")
                     # 获取学者的详细信息，包括基本信息、索引信息和共同作者信息
-                    filled_author = scholarly.fill(author, sections=["basics", "indices", "coauthors"])
+                    filled_author = scholarly.fill(author, sections=["basics", "indices", "publications"])
                     scholar_info = {
                         "name": filled_author.get('name', 'N/A'),
                         "affiliation": filled_author.get('affiliation', 'N/A'),
@@ -30,14 +31,18 @@ def search_scholars_by_research_areas(research_areas):
                     for j, pub in enumerate(filled_author.get('publications', [])):
                         if j >= 2:
                             break
-                        print(f"正在获取学者 {scholar_info['name']} 的第 {j + 1} 篇论文信息...")
-                        filled_pub = scholarly.fill(pub)
-                        paper_info = {
-                            "title": filled_pub['bib'].get('title', 'N/A'),
-                            "year": filled_pub['bib'].get('year', 'N/A'),
-                            "citations": filled_pub.get('num_citations', 'N/A')
-                        }
-                        scholar_info["papers"].append(paper_info)
+                        try:
+                            print(f"正在获取学者 {scholar_info['name']} 的第 {j + 1} 篇论文信息...")
+                            filled_pub = scholarly.fill(pub)  # 这里可能卡住
+                            paper_info = {
+                                "title": filled_pub.get('bib', {}).get('title', 'N/A'),
+                                "year": filled_pub.get('bib', {}).get('year', 'N/A'),
+                                "citations": filled_pub.get('num_citations', 'N/A')
+                            }
+                            scholar_info["papers"].append(paper_info)
+                        except Exception as e:
+                            print(f"获取论文信息时出错: {e}")
+                        time.sleep(1)
                     all_scholars_info.append(scholar_info)
                     found_authors += 1
                 except Exception as e:
@@ -103,7 +108,7 @@ def save_to_excel(scholars_info, file_name):
 
 
 # 示例研究方向列表
-research_areas = ["Artificial Intelligence", "Machine Learning"]
+research_areas = ["Agent-Based Modeling"]
 print("开始搜索所有研究方向的学者信息...")
 scholars_info = search_scholars_by_research_areas(research_areas)
 print("所有研究方向的学者信息搜索完成。")
