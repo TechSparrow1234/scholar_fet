@@ -1,0 +1,2 @@
+# scholar_fet
+一个python代码，可以从googlescholar上特定研究方向的学者信息
